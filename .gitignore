@@ -48,6 +48,7 @@ bin*/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+.vs/*
 
 # Kernel Module Compile Results
 *.mod*
