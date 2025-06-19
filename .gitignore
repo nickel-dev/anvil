@@ -42,6 +42,12 @@
 *.idb
 *.pdb
 
+# Project Files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd

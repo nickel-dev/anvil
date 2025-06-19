@@ -1,0 +1,26 @@
+﻿  shader compiled: default.glsl.h
+  shader compiled: shadow_map.glsl.h
+  main.c
+D:\src\anvil\src\main.c(24,64): warning C4305: 'function': truncation from 'double' to 'float32_t'
+D:\src\anvil\src\main.c(40,77): warning C4244: 'function': conversion from 'double' to 'float32_t', possible loss of data
+D:\src\anvil\src\main.c(105,33): warning C4244: '+=': conversion from 'float64_t' to 'float32_t', possible loss of data
+D:\src\anvil\src\main.c(106,33): warning C4244: '-=': conversion from 'float64_t' to 'float32_t', possible loss of data
+D:\src\anvil\src\main.c(111,10): warning C4244: 'function': conversion from 'double' to 'float', possible loss of data
+D:\src\anvil\src\main.c(111,51): warning C4244: 'function': conversion from 'double' to 'float', possible loss of data
+D:\src\anvil\src\main.c(112,10): warning C4244: 'function': conversion from 'double' to 'float', possible loss of data
+D:\src\anvil\src\main.c(113,10): warning C4244: 'function': conversion from 'double' to 'float', possible loss of data
+D:\src\anvil\src\main.c(113,51): warning C4244: 'function': conversion from 'double' to 'float', possible loss of data
+D:\src\anvil\src\main.c(119,62): warning C4244: 'function': conversion from 'float64_t' to 'float32_t', possible loss of data
+D:\src\anvil\src\main.c(120,62): warning C4244: 'function': conversion from 'float64_t' to 'float32_t', possible loss of data
+D:\src\anvil\src\main.c(91,19): warning C4101: 'fb': unreferenced local variable
+  ui.c
+D:\src\anvil\src\ui.c(131,55): warning C4244: 'function': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(131,74): warning C4244: 'function': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(131,95): warning C4244: 'function': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(131,115): warning C4244: 'function': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(224,63): warning C4244: 'initializing': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(224,83): warning C4244: 'initializing': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(311,66): warning C4244: 'initializing': conversion from 'int' to 'float32_t', possible loss of data
+D:\src\anvil\src\ui.c(311,86): warning C4244: 'initializing': conversion from 'int' to 'float32_t', possible loss of data
+  Generating Code...
+  anvil.vcxproj -> D:\src\anvil\bin\Debug-x64\anvil.exe
