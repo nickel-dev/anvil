@@ -4,6 +4,7 @@
 #include "../core.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #define GLAD_GL_IMPLEMENTATION
 #include "../extern/glad.h"
 #include <GL/glx.h>
@@ -31,14 +32,52 @@ float64_t os_time() {
 
 
 // messaging
-// @todo: implement this function to open a messagebox
-global string_t message_labels[] = { "error", "question", "warning", "info" };
 void os_message(os_message_icon_e icon, string_t format, ...) {
-    fprintf(stderr, "%s: ", message_labels[icon]);    
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
+	string_t buffer, command, mode = "--info";
+
+	// buffer
+	{
+	    va_list args, args_copy;
+		va_start(args, format);
+		va_copy(args_copy, args);  // Copy args before first use
+		int32_t length = stbsp_vsnprintf(NULL, 0, format, args_copy) + 1;
+		va_end(args_copy);
+
+		buffer = malloc(length);
+		stbsp_vsnprintf(buffer, length, format, args);  // Use original args
+		va_end(args);
+	}
+
+	// mode
+	switch (icon) {
+	case OS_MESSAGE_ERROR:
+		mode = "--error";
+		break;
+		
+    case OS_MESSAGE_QUESTION:
+		mode = "--question";
+		break;
+
+	case OS_MESSAGE_WARNING:
+		mode = "--warning";
+		break;
+
+	case OS_MESSAGE_INFO: // --info is the default
+	default:
+		break;
+	}
+
+	// command
+	{
+		int32_t length = stbsp_snprintf(NULL, 0, "zenity %s --text='%s'", mode, buffer) + 1;
+		command = malloc(length);
+		stbsp_snprintf(command, length, "zenity %s --text='%s'", mode, buffer);
+		command[length - 1] = 0;
+	}
+
+	// exec
+	fprintf(stderr, "%s\n", command);
+	system(command);
 }
 
 
@@ -52,53 +91,74 @@ struct os_window {
 
 os_window_o *os_window_create(const string_t title, uint16_t width, uint16_t height, int32_t x, int32_t y, uint32_t flags) {
     os_window_o *window = (os_window_o *)malloc(sizeof(os_window_o));
-	
+    
     window->display = XOpenDisplay(NULL);
     window->root = XDefaultRootWindow(window->display);
-	
+    
     XVisualInfo *visual = glXChooseVisual(window->display, 0, (int32_t[]){
-											  GLX_RGBA,
-											  GLX_DEPTH_SIZE, 24,
-											  GLX_DOUBLEBUFFER, 0
-										  });
-	
+        GLX_RGBA,
+        GLX_DEPTH_SIZE, 24,
+        GLX_DOUBLEBUFFER, 0
+    });
+    
     if (!visual) {
-		os_message(OS_MESSAGE_ERROR, "Failed to choose visual");
-		exit(EXIT_FAILURE);
+        os_message(OS_MESSAGE_ERROR, "Failed to choose visual");
+        exit(EXIT_FAILURE);
     }
-	
+    
     window->context = glXCreateContext(window->display, visual, 0, True);
     if (!window->context) {
         fprintf(stderr, "Unable to create GL context\n");
         exit(EXIT_FAILURE);
     }
-	
-    window->handle = XCreateSimpleWindow( window->display, window->root, x, y, width, height, 0, 0, 0);
-	
+    
+    // create the window
+    window->handle = XCreateSimpleWindow(window->display, window->root, x, y, width, height, 0, 0, 0);
+    
+    // force floating, position and scale
+	{
+		Atom net_wm_window_type = XInternAtom(window->display, "_NET_WM_WINDOW_TYPE", False);
+		Atom dialog_type = XInternAtom(window->display, "_NET_WM_WINDOW_TYPE_DIALOG", False);
+		XChangeProperty(window->display, window->handle, net_wm_window_type, XA_ATOM, 32, PropModeReplace, (uint8_t *)&dialog_type, 1);
+
+		XSizeHints hints;
+		hints.flags = PPosition | PSize | USPosition | USSize;
+		hints.x = x;
+		hints.y = y;
+		hints.width = width;
+		hints.height = height;
+		XSetWMNormalHints(window->display, window->handle, &hints);
+	}    
+    
     glXMakeCurrent(window->display, window->handle, window->context);
     XStoreName(window->display, window->handle, title);
-    XSelectInput(window->display, window->handle, KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | ExposureMask);
+    XSelectInput(window->display, window->handle, 
+				 KeyPressMask | KeyReleaseMask | 
+				 PointerMotionMask | 
+				 ButtonPressMask | ButtonReleaseMask | 
+				 StructureNotifyMask | ExposureMask
+				 );
+	
     XMapWindow(window->display, window->handle);
-	
+    
     if (!gladLoaderLoadGL()) {
-		os_message(OS_MESSAGE_ERROR, "Failed to load OpenGL");
-		exit(EXIT_FAILURE);
-		return NULL;
-	}
-	
+        os_message(OS_MESSAGE_ERROR, "Failed to load OpenGL");
+        exit(EXIT_FAILURE);
+        return NULL;
+    }
+    
     _wm_delete_message = XInternAtom(window->display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(window->display, window->handle, &_wm_delete_message, 1);
 
-	// load glXSwapIntervalSGI
-	glXSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB("glXSwapIntervalSGI");
-	if (!glXSwapIntervalSGI) {
-		os_message(OS_MESSAGE_ERROR, "Failed to load VSYNC function");
-		exit(EXIT_FAILURE);
-	}
+    // load glXSwapIntervalSGI for vsync
+    glXSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte *)"glXSwapIntervalSGI");
+    if (!glXSwapIntervalSGI) {
+        os_message(OS_MESSAGE_ERROR, "Failed to load VSYNC function");
+        exit(EXIT_FAILURE);
+    }
 
-	os_window_vsync(window, false);
-	
-    // @todo: window flags
+    os_window_vsync(window, false);
+    
     return window;
 }
 

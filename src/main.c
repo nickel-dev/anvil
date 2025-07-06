@@ -120,7 +120,6 @@ int32_t main(int32_t argc, char *argv[]) {
 			}
 			
 			dt = curr_time - last_time;
-			printf("FPS: %f, DT: %f\n", 1.0f / dt, dt);
 			last_time = curr_time;
 		}
 		

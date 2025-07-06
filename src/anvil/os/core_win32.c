@@ -44,7 +44,7 @@ void os_message(os_message_icon_e icon, string_t format, ...) {
 	
     // calculate required buffer size
     va_start(args, format);
-    int32_t needed_size = _vscprintf(format, args) + 1; // +1 for null terminator
+    int32_t needed_size = stbsp_vsprintf(NULL, format, args) + 1; // +1 for null terminator
     va_end(args);
 	
     if (needed_size <= 0) {
@@ -61,7 +61,7 @@ void os_message(os_message_icon_e icon, string_t format, ...) {
 	
     // format string
     va_start(args, format);
-    vsprintf(buffer, format, args);
+    stbsp_vsprintf(buffer, format, args);
     va_end(args);
 	
     // display messagebox
