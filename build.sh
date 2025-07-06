@@ -1,4 +1,3 @@
 #!/bin/sh
-python shader_compiler.py src/shaders
-mkdir -p bin/linux
-gcc -g -O0 -Wextra -Werror -Iextern src/*.c -o bin/linux/anvil.out -lm -lGL -lX11
+
+clang -lassimp -lGL -lm -lX11 src/*.c src/anvil/*.c -Iextern -g -O0 -w -obin/anvil.out

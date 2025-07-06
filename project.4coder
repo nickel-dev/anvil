@@ -5,10 +5,6 @@ project_name = "anvil";
 patterns = {
 	"*.c",
 	"*.cpp",
-	"*.ds",
-	"*.md",
-	"*.page",
-	"*.mdesk",
 	"*.h",
 	"*.i",
 	"*.inc",
@@ -16,6 +12,7 @@ patterns = {
 	"*.sh",
 	"*.4coder",
 	"*.txt",
+	"*.glsl",
 };
 
 blacklist_patterns = {
@@ -24,7 +21,12 @@ blacklist_patterns = {
 
 load_paths = {
 	{
-		{ {"src", .recursive = false, .relative = true } }, .os = "win"
+		{
+			{"src", .recursive = true, .relative = true },
+			{"data", .recursive = true, .relative = true },
+		},
+
+		.os = "win"
 	},
 };
 
@@ -36,7 +38,7 @@ command_list = {
 		.save_dirty_files = true,
 		.cursor_at_end = false,
 		.cmd = {
-			{ "python shader_compiler.py src/shaders", .os = "win" },
+			{ "echo Build using VS2022", .os = "win" },
 		},
 	},
 
@@ -47,7 +49,7 @@ command_list = {
 		.save_dirty_files = true,
 		.cursor_at_end = false,
 		.cmd = {
-			{ "anvil.exe", .os = "win" },
+			{ ".\bin\Debug-x64\anvil.exe", .os = "win" },
 		},
 	},
 };

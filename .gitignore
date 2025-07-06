@@ -41,7 +41,7 @@
 *.su
 *.idb
 *.pdb
-bin*/
+build/*
 
 # Project Files
 *.sln

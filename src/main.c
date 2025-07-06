@@ -1,13 +1,4 @@
-#include "base.h"
-#include "math.h"
-#include "core.h"
-#include "render.h"
-#include "audio.h"
-#include "ui.h"
-
-// shaders
-#include "shaders/default.glsl.h"
-#include "shaders/shadow_map.glsl.h"
+#include "anvil/anvil.h"
 
 global texture_t t0, t1;
 global mesh_t m, teapot;
@@ -52,13 +43,14 @@ int32_t main(int32_t argc, char *argv[]) {
 	
     os_window_o *window = os_window_create("anvil", 1280, 720, 0, 0, OS_WINDOW_CENTERED);
 	os_event_t event = { 0 };
+	os_window_vsync(window, false);
 	
     render_init(&event);
     audio_init();
 	ui_init();
 	
-	shader_t shader = shader_create(SHADER_SOURCE(default));
-	shader_t shadow_map_shader = shader_create(SHADER_SOURCE(shadow_map));
+	shader_t shader = shader_load("data/shaders/default.glsl");
+	shader_t shadow_map_shader = shader_load("data/shaders/shadow_map.glsl");
 	
 	camera = (transform_t) {
 		.pos   = (vec3_t){ 0.0f, 1.0f, 5.0f },
@@ -86,7 +78,7 @@ int32_t main(int32_t argc, char *argv[]) {
 	
     shader_uniform_texture(shader, "texture0", 0);
 	
-    render_state_set((render_state_t){ .blendig = false, .depth_testing = true, .wireframe = false, .face_culling = true });
+    render_state_set((render_state_t){ .blending = false, .depth_testing = true, .wireframe = false, .face_culling = true });
 	
     framebuffer_t fb = framebuffer_create(1280, 720, ZERO_STRUCT(texture_params_t), FRAMEBUFFER_COLOR);
 	depth_fb = framebuffer_create(2048, 2048, ZERO_STRUCT(texture_params_t), FRAMEBUFFER_DEPTH);
@@ -128,6 +120,7 @@ int32_t main(int32_t argc, char *argv[]) {
 			}
 			
 			dt = curr_time - last_time;
+			printf("FPS: %f, DT: %f\n", 1.0f / dt, dt);
 			last_time = curr_time;
 		}
 		
@@ -164,8 +157,7 @@ int32_t main(int32_t argc, char *argv[]) {
 			static float32_t v = 5;
 			ui_text("Text", (vec2_t){ 0.0f, 50.0f }, 1.0f, UI_ANCHOR_CENTER);
 			ui_button("Button", (vec2_t){ 0.0f, 0.0f }, (vec2_t){ 200.0f, 20.0f }, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER);
-			if (ui_slider("Silder", (vec2_t){ 0.0f, -50.0f }, (vec2_t){ 200.0f, 20.0f }, &v, 0.0f, 10.0f, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER));
-			//printf("%f\n", v);
+			ui_slider("Silder", (vec2_t){ 0.0f, -50.0f }, (vec2_t){ 200.0f, 20.0f }, &v, 0.0f, 10.0f, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER);
 		}
 		
 		os_window_swap_buffers(window);
