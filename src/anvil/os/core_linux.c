@@ -156,9 +156,9 @@ os_window_o *os_window_create(const string_t title, uint16_t width, uint16_t hei
         os_message(OS_MESSAGE_ERROR, "Failed to load VSYNC function");
         exit(EXIT_FAILURE);
     }
-
-    os_window_vsync(window, false);
-    
+	
+	// disable vsync by default
+    os_window_vsync(window, false);	
     return window;
 }
 

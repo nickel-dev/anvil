@@ -18,6 +18,9 @@ Anvil is a cross platform 2d/3d game framework 100% written in C.
 
 # TODO
 
+## Core
+- [ ] Add window flags to linux implementation
+
 ## Audio
 - [ ] Fading
 
