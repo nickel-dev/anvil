@@ -46,7 +46,7 @@ font_o *font_load(string_t path, int32_t bitmap_width, int32_t bitmap_height, te
 	uint8_t *data;
 	FILE *file = fopen(path, "rb");
 	if (!file) {
-		__font_load_exit:
+	__font_load_exit:
 		os_message(OS_MESSAGE_ERROR, "Failed to open font file\nPath: %s", path);
 		return NULL;
 	}
@@ -134,65 +134,88 @@ void ui_event_push(os_event_t *event) {
 
 // text
 void ui_text(string_t text, vec2_t pos, float32_t scale, ui_anchor_e anchor) {
+    if (!text || !*text) return;  // Early exit for empty strings
+    
     render_state_t old_render_state = render_state_get();
-    render_state_set((render_state_t){ .depth_testing = false, .blending = true, .face_culling = true, .wireframe = false });
+    render_state_set((render_state_t){
+        .depth_testing = false,
+        .blending = true,
+        .face_culling = true,
+        .wireframe = false
+    });
     
     shader_bind(_shader_text);
     texture_bind(&_style.font->texture, 0);
     shader_uniform_texture(_shader_text, "texture0", 0);
     shader_uniform_matrix(_shader_text, "projection", _projection);
     
+    // Calculate total width (including advances between characters)
     float32_t total_width = 0.0f;
     for (string_t c = text; *c; ++c) {
         stbtt_packedchar *ch = &_style.font->chars[*c - 32];
         total_width += ch->xadvance * scale;
     }
     
+    // Adjust horizontal position based on anchor
     switch (anchor) {
         case UI_ANCHOR_CENTER:
-		pos.x -= total_width * 0.5f;
-		break;
-        
-		case UI_ANCHOR_RIGHT:
-		pos.x -= total_width;
-		break;
-		
+            pos.x -= total_width * 0.5f;
+            break;
+            
+        case UI_ANCHOR_RIGHT:
+            pos.x -= total_width;
+            break;
+            
         case UI_ANCHOR_LEFT:
         default:
-		break;
+            break;  // No adjustment needed for left anchor
     }
     
+    // Render each character
     for (string_t c = text; *c; ++c) {
         stbtt_packedchar *ch = &_style.font->chars[*c - 32];
         
-        // pos
+        if (*c == ' ') {  // Handle space characters efficiently
+            pos.x += ch->xadvance * scale;
+            continue;
+        }
+        
+        // Calculate position (note: ypos calculation maintains bottom alignment)
         float32_t xpos = pos.x + ch->xoff * scale;
         float32_t ypos = pos.y - (ch->yoff + ch->y1 - ch->y0) * scale;
         
-        // scale
+        // Calculate dimensions
         float32_t w = (ch->x1 - ch->x0) * scale;
         float32_t h = (ch->y1 - ch->y0) * scale;
         
-        // uvs
+        // Skip rendering for zero-sized characters
+        if (w <= 0.0f || h <= 0.0f) {
+            pos.x += ch->xadvance * scale;
+            continue;
+        }
+        
+        // Calculate UV coordinates
         float32_t u0 = ch->x0 / (float32_t)_style.font->bitmap_width;
         float32_t v0 = ch->y0 / (float32_t)_style.font->bitmap_height;
         float32_t u1 = ch->x1 / (float32_t)_style.font->bitmap_width;
         float32_t v1 = ch->y1 / (float32_t)_style.font->bitmap_height;
         
+        // Define quad vertices
         uint32_t indices[6] = { 0, 1, 3, 1, 2, 3 };
         vertex_t vertices[4] = {
-            { (vec3_t){ xpos,     ypos + h, 0.0f }, (vec2_t){ u0, v0 }, _style.text_color, ZERO_STRUCT(vec3_t) },
-            { (vec3_t){ xpos,     ypos,     0.0f }, (vec2_t){ u0, v1 }, _style.text_color, ZERO_STRUCT(vec3_t) },
-            { (vec3_t){ xpos + w, ypos,     0.0f }, (vec2_t){ u1, v1 }, _style.text_color, ZERO_STRUCT(vec3_t) },
-            { (vec3_t){ xpos + w, ypos + h, 0.0f }, (vec2_t){ u1, v0 }, _style.text_color, ZERO_STRUCT(vec3_t) }
+            { { xpos,     ypos + h, 0.0f }, { u0, v0 }, _style.text_color, {0} },
+            { { xpos,     ypos,     0.0f }, { u0, v1 }, _style.text_color, {0} },
+            { { xpos + w, ypos,     0.0f }, { u1, v1 }, _style.text_color, {0} },
+            { { xpos + w, ypos + h, 0.0f }, { u1, v0 }, _style.text_color, {0} }
         };
         
+        // Render the character
         mesh_clear(&_mesh);
-        mesh_push_vertices(&_mesh, (vertex_t *)vertices, 4);
-        mesh_push_indices(&_mesh, (uint32_t *)indices, 6);
-        
+        mesh_push_vertices(&_mesh, vertices, 4);
+        mesh_push_indices(&_mesh, indices, 6);
         mesh_draw(&_mesh);
         
+        // Advance to next character position
         pos.x += ch->xadvance * scale;
     }
     
@@ -208,16 +231,16 @@ bool8_t ui_button(string_t text, vec2_t pos, vec2_t scale, ui_anchor_e button_an
 	
 	// anchoring the button
 	switch (button_anchor) {
-		case UI_ANCHOR_CENTER:
+	case UI_ANCHOR_CENTER:
 		pos.x -= scale.x / 2;
 		break;
 		
-		case UI_ANCHOR_RIGHT:
+	case UI_ANCHOR_RIGHT:
 		pos.x -= scale.x;
 		break;
 		
-		case UI_ANCHOR_LEFT:
-		default:
+	case UI_ANCHOR_LEFT:
+	default:
 		break;
 	}
 	
@@ -257,8 +280,8 @@ bool8_t ui_button(string_t text, vec2_t pos, vec2_t scale, ui_anchor_e button_an
             { (vec3_t){ pos.x + scale.x, pos.y - m,       0.0f }, ZERO_STRUCT(vec2_t), color, ZERO_STRUCT(vec3_t) },
             { (vec3_t){ pos.x + scale.x, pos.y + scale.y, 0.0f }, ZERO_STRUCT(vec2_t), color, ZERO_STRUCT(vec3_t) }
         };
-        
-        mesh_clear(&_mesh);
+
+		mesh_clear(&_mesh);
         _mesh.mode = RENDER_MODE_LINE_LOOP;
 		mesh_push_vertices(&_mesh, (vertex_t *)vertices, 4);
 		mesh_push_indices(&_mesh, (uint32_t *)indices, 4);
@@ -268,16 +291,16 @@ bool8_t ui_button(string_t text, vec2_t pos, vec2_t scale, ui_anchor_e button_an
 	
 	if (text) {
 		switch (text_anchor) {
-			case UI_ANCHOR_CENTER:
+		case UI_ANCHOR_CENTER:
 			ui_text(text, (vec2_t){ pos.x + scale.x / 2, pos.y }, 1.0f, UI_ANCHOR_CENTER);
 			break;
 			
-			case UI_ANCHOR_RIGHT:
+		case UI_ANCHOR_RIGHT:
 			ui_text(text, (vec2_t){ pos.x + scale.x, pos.y }, 1.0f, UI_ANCHOR_RIGHT);
 			break;
 			
-			case UI_ANCHOR_LEFT:
-			default:
+		case UI_ANCHOR_LEFT:
+		default:
 			ui_text(text, pos, 1.0f, UI_ANCHOR_LEFT);
 			break;
 		};
@@ -295,16 +318,16 @@ bool8_t ui_slider(string_t text, vec2_t pos, vec2_t scale, float32_t *value, flo
 	
     // anchoring the button
     switch (slider_anchor) {
-        case UI_ANCHOR_CENTER:
+	case UI_ANCHOR_CENTER:
         pos.x -= scale.x / 2;
         break;
         
-        case UI_ANCHOR_RIGHT:
+	case UI_ANCHOR_RIGHT:
         pos.x -= scale.x;
         break;
         
-        case UI_ANCHOR_LEFT:
-        default:
+	case UI_ANCHOR_LEFT:
+	default:
         break;
     }
     
@@ -380,16 +403,16 @@ bool8_t ui_slider(string_t text, vec2_t pos, vec2_t scale, float32_t *value, flo
 	
     if (text) {
         switch (text_anchor) {
-            case UI_ANCHOR_CENTER:
+		case UI_ANCHOR_CENTER:
             ui_text(text, (vec2_t){ pos.x + scale.x / 2, pos.y }, 1.0f, UI_ANCHOR_CENTER);
             break;
             
-            case UI_ANCHOR_RIGHT:
+		case UI_ANCHOR_RIGHT:
             ui_text(text, (vec2_t){ pos.x + scale.x, pos.y }, 1.0f, UI_ANCHOR_RIGHT);
             break;
             
-            case UI_ANCHOR_LEFT:
-            default:
+		case UI_ANCHOR_LEFT:
+		default:
             ui_text(text, pos, 1.0f, UI_ANCHOR_LEFT);
             break;
         };

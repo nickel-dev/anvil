@@ -41,9 +41,9 @@ uniform vec3 view_pos;
 
 // light_pos = vec3(-1.0f, 2.0f, 5.0f)
 
-float ShadowCalculation(vec4 fragPosLightSpace) {
+float calculate_shadow() {
     // perform perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    vec3 projCoords = frag_pos_light_space.xyz / frag_pos_light_space.w;
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
     // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
@@ -53,7 +53,7 @@ float ShadowCalculation(vec4 fragPosLightSpace) {
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(normal);
     vec3 lightDir = normalize(vec3(-1.0f, 2.0f, 5.0f) - frag_pos);
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.005);
     // check whether current frag pos is in shadow
     // float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
     // PCF
@@ -80,11 +80,7 @@ void main() {
 	vec4 frag_color = texture(texture0, uv);
     vec3 normal = normalize(normal);
     vec3 light_color = vec3(0.3);
-    
-	if (frag_color.w == 0.0f) {
-		discard;
-	}
-	
+
 	// ambient
     vec3 ambient = 0.3 * light_color;
 	
@@ -102,7 +98,7 @@ void main() {
     vec3 specular = spec * light_color;    
     
 	// calculate shadow
-    float shadow = ShadowCalculation(frag_pos_light_space);                      
+    float shadow = calculate_shadow();                      
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * frag_color.rgb;    
 	
 	gl_FragColor = vec4(lighting, frag_color.w);

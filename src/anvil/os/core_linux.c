@@ -33,7 +33,7 @@ float64_t os_time() {
 
 // messaging
 void os_message(os_message_icon_e icon, string_t format, ...) {
-	string_t buffer, command, mode = "--info";
+	string_t buffer, command, mode = "-u normal";
 
 	// buffer
 	{
@@ -51,27 +51,24 @@ void os_message(os_message_icon_e icon, string_t format, ...) {
 	// mode
 	switch (icon) {
 	case OS_MESSAGE_ERROR:
-		mode = "--error";
+		mode = "-u critical";
 		break;
 		
-    case OS_MESSAGE_QUESTION:
-		mode = "--question";
-		break;
-
 	case OS_MESSAGE_WARNING:
-		mode = "--warning";
+		mode = "-u low";
 		break;
 
 	case OS_MESSAGE_INFO: // --info is the default
+    case OS_MESSAGE_QUESTION:
 	default:
 		break;
 	}
 
 	// command
 	{
-		int32_t length = stbsp_snprintf(NULL, 0, "zenity %s --text='%s'", mode, buffer) + 1;
+		int32_t length = stbsp_snprintf(NULL, 0, "notify-send  %s \"%s\"", mode, buffer) + 1;
 		command = malloc(length);
-		stbsp_snprintf(command, length, "zenity %s --text='%s'", mode, buffer);
+		stbsp_snprintf(command, length, "notify-send %s \"%s\"", mode, buffer);
 		command[length - 1] = 0;
 	}
 

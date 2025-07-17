@@ -1,7 +1,11 @@
-#include "anvil/anvil.h"
+/*#include "anvil/anvil.h"
+
+global struct {
+	mesh_t mesh_box;
+} assets;
 
 global texture_t t0, t1;
-global mesh_t m, teapot;
+global mesh_t m, teapot, mesh_box;
 global transform_t camera;
 global framebuffer_t depth_fb;
 global float64_t dt;
@@ -34,7 +38,7 @@ internal void render_scene(shader_t shader) {
 	
 	texture_bind(&t1, 0);
 	shader_uniform_matrix(shader, "xform", IDENTITY_MATRIX);
-	mesh_draw(&teapot);
+	mesh_draw(&assets.mesh_box);
 }
 
 int32_t main(int32_t argc, char *argv[]) {
@@ -60,6 +64,7 @@ int32_t main(int32_t argc, char *argv[]) {
 	
     m = mesh_create(4, 6);
 	teapot = mesh_load("data/teapot.fbx");
+	assets.mesh_box = mesh_load("data/meshes/box.glb");
 	
 	vertex_t v[4] = {
         { (vec3_t){ -.5f, 0.5f, 0.0f }, (vec2_t){ 0.0f, 1.0f }, (vec4_t){ 1.0f, 1.0f, 1.0f, 1.0f }, (vec3_t){ 0.0f, 0.0f, 1.0f } },
@@ -81,7 +86,7 @@ int32_t main(int32_t argc, char *argv[]) {
     render_state_set((render_state_t){ .blending = false, .depth_testing = true, .wireframe = false, .face_culling = true });
 	
     framebuffer_t fb = framebuffer_create(1280, 720, ZERO_STRUCT(texture_params_t), FRAMEBUFFER_COLOR);
-	depth_fb = framebuffer_create(2048, 2048, ZERO_STRUCT(texture_params_t), FRAMEBUFFER_DEPTH);
+	depth_fb = framebuffer_create(10000, 10000, ZERO_STRUCT(texture_params_t), FRAMEBUFFER_DEPTH);
 	
     while (!event.should_quit) {
         os_event_pull(window, &event);
@@ -156,7 +161,7 @@ int32_t main(int32_t argc, char *argv[]) {
 			static float32_t v = 5;
 			ui_text("Text", (vec2_t){ 0.0f, 50.0f }, 1.0f, UI_ANCHOR_CENTER);
 			ui_button("Button", (vec2_t){ 0.0f, 0.0f }, (vec2_t){ 200.0f, 20.0f }, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER);
-			ui_slider("Silder", (vec2_t){ 0.0f, -50.0f }, (vec2_t){ 200.0f, 20.0f }, &v, 0.0f, 10.0f, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER);
+			ui_slider("Slider", (vec2_t){ 0.0f, -50.0f }, (vec2_t){ 200.0f, 20.0f }, &v, 0.0f, 10.0f, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER);
 		}
 		
 		os_window_swap_buffers(window);
@@ -169,4 +174,110 @@ int32_t main(int32_t argc, char *argv[]) {
 	render_close();
 	
 	return EXIT_SUCCESS;
+}
+*/
+#include "anvil/anvil.h"
+#include "main.h"
+
+//
+// globals
+//
+
+global os_event_t event;
+
+global struct {
+	texture_t tex_white;
+	mesh_t mesh_box;
+} assets;
+
+global enum { SCENE_MENU, SCENE_GAME } curr_scene;
+
+//
+// main
+//
+
+int32_t main(int32_t argc, string_t *argv) {
+	UNUSED(argc);
+    UNUSED(argv);
+
+	// init anvil
+    os_window_o *window = os_window_create("anvil", 1280, 720, 0, 0, OS_WINDOW_CENTERED);
+	os_window_vsync(window, true);
+	
+    render_init(&event);
+    audio_init();
+	ui_init();
+
+	// init game
+	assets_load();		
+
+	// mainloop
+	while (!event.should_quit) {
+        os_event_pull(window, &event);
+        ui_event_push(&event);
+		
+		if (key_pressed(KEY_ESCAPE)) {
+			event.should_quit = true;
+		}
+
+		// game loop
+		switch (curr_scene) {
+		default:
+		case SCENE_MENU: {
+		    menu_update();
+			break;
+		}
+
+		case SCENE_GAME: {
+			
+			break;
+		}
+		}
+		
+		os_window_swap_buffers(window);
+	}
+
+	// cleanup
+	ui_close();
+	audio_close();
+	render_close();	
+
+	os_window_delete(window);	
+	return EXIT_SUCCESS;
+}
+
+
+//
+// assets
+//
+
+void assets_load() {
+	// textures
+	uint32_t color = 0xFFFFFFFF;
+	assets.tex_white = texture_create((uint8_t *)&color, 1, 1, 4, ZERO_STRUCT(texture_params_t));
+	
+	// meshes
+	assets.mesh_box = mesh_load("data/meshes/box.glb");
+
+	// binding
+	texture_bind(&assets.tex_white, 0);
+}
+
+
+//
+// menu
+//
+
+void menu_update() {
+	render_clear((vec3_t){ 0.4f, 0.4f, 0.5f });
+
+	ui_text("Menu", (vec2_t){ 0.0f, 150.0f }, 2.0f, UI_ANCHOR_CENTER);
+
+	if (ui_button("Play", (vec2_t){ 0.0f, -50.0f}, (vec2_t){ 200.0f, 20.0f}, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER)) {
+		curr_scene = SCENE_GAME;
+	}
+
+	if (ui_button("Exit", (vec2_t){ 0.0f, -100.0f}, (vec2_t){ 200.0f, 20.0f}, UI_ANCHOR_CENTER, UI_ANCHOR_CENTER)) {
+		event.should_quit = true;
+	}
 }
